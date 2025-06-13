@@ -62,16 +62,12 @@ contract AuctionWhatever {
 
     function placeBid(uint256 articleId) external payable {
         uint256 amountToAdd = msg.value;
-        require(articleId < lastId, "The article doesn't exists");
+        require(articleId < lastId, Constants.ARTICLE_DOES_NOT_EXISTS);
 
         Article storage article = articles[articleId];
         require(
             block.timestamp < article.endDate,
-            "Article is no longer available."
-        );
-        require(
-            block.timestamp >= article.startDate,
-            "Article is not available yet."
+            Constants.ARTICLE_NO_LONGER_AVAILABLE_MSG
         );
 
         // get last bid price for that address and add to what it is on place
@@ -83,7 +79,7 @@ contract AuctionWhatever {
         );
         require(
             totalAmount > article.highestBid + offerPercentage,
-            "Invalid price. Try a higher price!"
+            Constants.INVALID_PRICE_PERCENTAGE_MSG
         );
 
         // update new winner so far

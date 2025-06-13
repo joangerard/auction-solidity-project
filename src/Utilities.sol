@@ -13,11 +13,4 @@ library Utilities {
 
         return (value * convertedPercentage) / 10 ** Constants.DECIMALS;
     }
-
-    function concatStrings(
-        string memory a,
-        string memory b
-    ) private pure returns (string memory) {
-        return string(abi.encodePacked(a, b));
-    }
 }
