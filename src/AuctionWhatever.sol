@@ -10,6 +10,8 @@ contract AuctionWhatever {
     uint256 private lastId = 0;
     address public immutable i_owner;
     mapping(uint256 id => Article) public articles;
+    mapping(uint256 articleId => mapping(address => uint256 totalSpent))
+        public bidders;
     struct Article {
         string name;
         string description;
@@ -18,7 +20,6 @@ contract AuctionWhatever {
         uint256 endDate;
         uint256 highestBid;
         address winner;
-        mapping(address => uint256 totalSpent) bidders;
     }
 
     modifier onlyOwner() {
@@ -71,7 +72,7 @@ contract AuctionWhatever {
         );
 
         // get last bid price for that address and add to what it is on place
-        uint256 totalAmount = article.bidders[msg.sender] + amountToAdd;
+        uint256 totalAmount = bidders[articleId][msg.sender] + amountToAdd;
 
         uint256 offerPercentage = Utilities.getPercentage(
             Constants.FIXED_PERCENTAGE,
@@ -87,14 +88,14 @@ contract AuctionWhatever {
         article.winner = msg.sender;
 
         // keep track of sent amounts per article per address
-        article.bidders[msg.sender] = totalAmount;
+        bidders[articleId][msg.sender] = totalAmount;
     }
 
     function showBids(
         uint256 articleId,
         address bidder
     ) external view returns (uint256) {
-        return articles[articleId].bidders[bidder];
+        return bidders[articleId][bidder];
     }
 
     function showWinner(

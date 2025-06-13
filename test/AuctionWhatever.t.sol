@@ -73,6 +73,7 @@ contract AuctionWhateverTest is Test {
 
         assertEq(highestBid, bidAmount);
         assertEq(winner, fake_user);
+        assertEq(auctionWhatever.bidders(0, fake_user), bidAmount);
     }
 
     function testPlaceBidRaise() public {
