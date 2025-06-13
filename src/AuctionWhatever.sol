@@ -51,18 +51,18 @@ contract AuctionWhatever {
             "Duration must be between 1 and 30 calendar days."
         );
 
-        lastId++;
         Article storage article = articles[lastId];
         article.name = name;
         article.description = description;
         article.initialPrice = initialPrice;
         article.startDate = block.timestamp;
         article.endDate = block.timestamp + (durationDays * 1 days);
+        lastId++;
     }
 
     function placeBid(uint256 articleId) external payable {
         uint256 amountToAdd = msg.value;
-        require(articleId <= lastId, "The article doesn't exists");
+        require(articleId < lastId, "The article doesn't exists");
 
         Article storage article = articles[articleId];
         require(
@@ -70,7 +70,7 @@ contract AuctionWhatever {
             "Article is no longer available."
         );
         require(
-            block.timestamp > article.startDate,
+            block.timestamp >= article.startDate,
             "Article is not available yet."
         );
 

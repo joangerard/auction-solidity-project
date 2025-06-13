@@ -54,12 +54,18 @@ $ forge script script/DeployAuctionWhatever.s.sol --rpc-url $RPC_URL --private-k
 ### Cast
 
 ```shell
-$ cast send 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9 "create(string,string,uint256,uint16)" "Pencil" "This is an special pencil." 10000000000000000 7 --rpc-url $RPC_URL --private-key $PRIVATE_KEY
-$ cast send 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9 "create(string,string,uint256,uint16)" "Special Book" "This is an special book." 20000000000000000 7 --rpc-url $RPC_URL --private-key $PRIVATE_KEY
-$ cast send 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9 "create(string,string,uint256,uint16)" "Computer" "This is an special computer." 10000000000000000 7 --rpc-url $RPC_URL --private-key $PRIVATE_KEY
+$ cast send 0x0B306BF915C4d645ff596e518fAf3F9669b97016 "createArticle(string,string,uint256,uint16)" "Pencil" "This is an special pencil." 10000000000000000 7 --rpc-url $RPC_URL --private-key $PRIVATE_KEY
+$ cast send 0x0B306BF915C4d645ff596e518fAf3F9669b97016 "createArticle(string,string,uint256,uint16)" "Special Book" "This is an special book." 20000000000000000 7 --rpc-url $RPC_URL --private-key $PRIVATE_KEY
+$ cast send 0x0B306BF915C4d645ff596e518fAf3F9669b97016 "createArticle(string,string,uint256,uint16)" "Computer" "This is an special computer." 10000000000000000 7 --rpc-url $RPC_URL --private-key $PRIVATE_KEY
 
-$ cast call 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9 "articles(uint256)(string,string,uint256,uint256,uint256)" 1 \
+$ cast call 0x0B306BF915C4d645ff596e518fAf3F9669b97016 "articles(uint256)(string,string,uint256,uint256,uint256)" 1 \
   --rpc-url $RPC_URL
+
+$ cast call 0x0B306BF915C4d645ff596e518fAf3F9669b97016 "placeBid(uint256)" 1 \
+  --rpc-url $RPC_URL --value 10ether --private-key $PRIVATE_KEY_USER_1
+
+$ cast call 0x0B306BF915C4d645ff596e518fAf3F9669b97016 "showBids(uint256,address)" 1 $ADDRESS_USER_1 \
+--rpc-url $RPC_URL --value 10ether --private-key $PRIVATE_KEY_USER_2
 ```
 
 ### Help
