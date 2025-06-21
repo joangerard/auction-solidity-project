@@ -73,7 +73,8 @@ contract AuctionWhateverTest is Test {
 
         assertEq(highestBid, bidAmount);
         assertEq(winner, fake_user);
-        assertEq(auctionWhatever.bidders(0, fake_user), bidAmount);
+        // assertEq(auctionWhatever.bidders(0, fake_user), bidAmount);
+        assertEq(auctionWhatever.showBids(0, fake_user), bidAmount);
     }
 
     function testPlaceBidRaise() public {
@@ -198,5 +199,59 @@ contract AuctionWhateverTest is Test {
 
         assertEq(winner, fake_user);
         assertEq(highestBid, initialBidAmount);
+    }
+
+    function testGetRefundAsWinner() public {
+        address fake_user = address(1337);
+        address fake_user2 = address(1338);
+        address fake_user3 = address(1339);
+
+        // first bid
+        vm.prank(fake_user);
+        vm.deal(fake_user, 150 ether);
+        auctionWhatever.placeBid{value: 50}(0);
+
+        // second bid
+        vm.prank(fake_user2);
+        vm.deal(fake_user2, 150 ether);
+        auctionWhatever.placeBid{value: 70}(0);
+
+        // third bid
+        vm.prank(fake_user3);
+        vm.deal(fake_user3, 150 ether);
+        auctionWhatever.placeBid{value: 100}(0);
+
+        // try to get refund as winner
+        vm.warp(941070800);
+        vm.prank(fake_user3);
+        vm.expectRevert(bytes(Constants.INVALID_WINNER_REFUND_MSG));
+        auctionWhatever.returnFunds(0);
+    }
+
+    function testGetRefundAsParticipant() public {
+        address fake_user = address(1337);
+        address fake_user2 = address(1338);
+        address fake_user3 = address(1339);
+
+        // first bid
+        vm.prank(fake_user);
+        vm.deal(fake_user, 150 ether);
+        auctionWhatever.placeBid{value: 50 ether}(0);
+
+        // second bid
+        vm.prank(fake_user2);
+        vm.deal(fake_user2, 150 ether);
+        auctionWhatever.placeBid{value: 100 ether}(0);
+        assertEq(fake_user2.balance, 50 ether);
+
+        // third bid
+        vm.prank(fake_user3);
+        vm.deal(fake_user3, 150 ether);
+        auctionWhatever.placeBid{value: 150 ether}(0);
+
+        // try to get refund as participant
+        vm.prank(fake_user2);
+        auctionWhatever.returnFunds(0);
+        assertEq(fake_user2.balance, 148 ether);
     }
 }

@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.26;
 
 import {Constants} from "./Constants.sol";
 import {Utilities} from "./Utilities.sol";
+import {IterableMapping} from "./IterableMapping.sol";
 
 error Auction__NotOwner();
 
 contract AuctionWhatever {
+    using IterableMapping for IterableMapping.Map;
     uint256 private lastId = 0;
     address public immutable i_owner;
     mapping(uint256 id => Article) public articles;
-    mapping(uint256 articleId => mapping(address => uint256 totalSpent))
-        public bidders;
+    mapping(uint256 articleId => IterableMapping.Map map) private bidders;
     struct Article {
         string name;
         string description;
@@ -72,7 +73,7 @@ contract AuctionWhatever {
         );
 
         // get last bid price for that address and add to what it is on place
-        uint256 totalAmount = bidders[articleId][msg.sender] + amountToAdd;
+        uint256 totalAmount = bidders[articleId].get(msg.sender) + amountToAdd;
 
         uint256 offerPercentage = Utilities.getPercentage(
             Constants.FIXED_PERCENTAGE,
@@ -88,14 +89,46 @@ contract AuctionWhatever {
         article.winner = msg.sender;
 
         // keep track of sent amounts per article per address
-        bidders[articleId][msg.sender] = totalAmount;
+        bidders[articleId].set(msg.sender, totalAmount);
     }
 
     function showBids(
         uint256 articleId,
         address bidder
     ) external view returns (uint256) {
-        return bidders[articleId][bidder];
+        return bidders[articleId].get(bidder);
+    }
+
+    function returnFunds(uint256 articleId) external {
+        Article storage article = articles[articleId];
+        uint256 bidAmount = bidders[articleId].get(msg.sender);
+
+        // verify auction amount was not already refund
+        require(
+            msg.sender != article.winner,
+            Constants.INVALID_WINNER_REFUND_MSG
+        );
+        require(bidAmount > 0, "You're amount is 0");
+
+        uint256 commission = Utilities.getPercentage(
+            Constants.FIXED_PERCENTAGE_REFUND,
+            bidAmount
+        );
+
+        uint256 refundAmount = bidAmount - commission;
+
+        bidders[articleId].set(msg.sender, 0);
+
+        (bool success, ) = msg.sender.call{value: refundAmount}("");
+
+        if (!success) {
+            revert(
+                "Something happened during the transaction. Please, try again."
+            );
+        }
+
+        // only owner can execute this method
+        // iterate through binders and return money to each of them less the percentage fee (2%)
     }
 
     function showWinner(
