@@ -7,28 +7,24 @@ import {Constants} from "../src/Constants.sol";
 
 contract AuctionWhateverTest is Test {
     AuctionWhatever auctionWhatever;
+    address articleOwner = address(1320);
 
     function setUp() external {
         auctionWhatever = new AuctionWhatever();
         vm.warp(1641070800);
-        auctionWhatever.createArticle(
-            "Pencil",
-            "An incredible pencil",
-            1 ether,
-            7
-        );
+        vm.prank(articleOwner);
+        auctionWhatever.createArticle("Pencil", "An incredible pencil", 1 ether, 7);
     }
 
     function testCreateArticleShouldAddAnItemToArticles() public {
-        auctionWhatever.createArticle(
-            "Other Pencil",
-            "An incredible pencil",
-            10 ether,
-            7
-        );
-        (, , uint256 initialPrice, , , , ) = auctionWhatever.articles(1);
+        address articleOwner2 = address(1321);
+        vm.prank(articleOwner2);
+        auctionWhatever.createArticle("Other Pencil", "An incredible pencil", 10 ether, 7);
+        (,, uint256 initialPrice,,,,, address originalOwner, bool finalized) = auctionWhatever.articles(1);
 
         assertEq(initialPrice, 10 ether);
+        assertEq(originalOwner, articleOwner2);
+        assertEq(finalized, false);
     }
 
     function testCreateArticleShouldRevertWhenPriceIsZero() public {
@@ -51,9 +47,7 @@ contract AuctionWhateverTest is Test {
         auctionWhatever.createArticle("Pencil", "An incredible pencil", 0, 0);
     }
 
-    function testCreateArticleShouldHaveValidDurationDaysNoLongerThanAMonth()
-        public
-    {
+    function testCreateArticleShouldHaveValidDurationDaysNoLongerThanAMonth() public {
         vm.expectRevert();
         auctionWhatever.createArticle("Pencil", "An incredible pencil", 0, 31);
     }
@@ -68,8 +62,7 @@ contract AuctionWhateverTest is Test {
 
         auctionWhatever.placeBid{value: bidAmount}(0);
 
-        (, , , , , uint256 highestBid, address winner) = auctionWhatever
-            .articles(0);
+        (,,,,, uint256 highestBid, address winner,,) = auctionWhatever.articles(0);
 
         assertEq(highestBid, bidAmount);
         assertEq(winner, fake_user);
@@ -94,8 +87,7 @@ contract AuctionWhateverTest is Test {
 
         auctionWhatever.placeBid{value: bidAmountToAdd}(0);
 
-        (, , , , , uint256 highestBid, address winner) = auctionWhatever
-            .articles(0);
+        (,,,,, uint256 highestBid, address winner,,) = auctionWhatever.articles(0);
 
         assertEq(highestBid, expectedBidAmount);
         assertEq(winner, fake_user);
@@ -111,7 +103,6 @@ contract AuctionWhateverTest is Test {
         vm.warp(1641070800);
         vm.prank(fake_user);
         vm.deal(fake_user, 10 ether);
-
         auctionWhatever.placeBid{value: initialBidAmount}(0);
 
         vm.prank(fake_user_2);
@@ -119,8 +110,7 @@ contract AuctionWhateverTest is Test {
 
         auctionWhatever.placeBid{value: otherBidAmount}(0);
 
-        (, , , , , uint256 highestBid, address winner) = auctionWhatever
-            .articles(0);
+        (,,,,, uint256 highestBid, address winner,,) = auctionWhatever.articles(0);
 
         assertEq(highestBid, otherBidAmount);
         assertEq(winner, fake_user_2);
@@ -149,12 +139,7 @@ contract AuctionWhateverTest is Test {
     function testPlaceBidArticleNoLongerAvailable() public {
         uint256 initialBidAmount = 100 ether;
         vm.warp(1641070800);
-        auctionWhatever.createArticle(
-            "No Longer Available Article",
-            "An incredible pencil",
-            1 ether,
-            7
-        );
+        auctionWhatever.createArticle("No Longer Available Article", "An incredible pencil", 1 ether, 7);
 
         vm.warp(9641070800); //long time in the future
         address fake_user = address(1337);
@@ -253,5 +238,49 @@ contract AuctionWhateverTest is Test {
         vm.prank(fake_user2);
         auctionWhatever.returnFunds(0);
         assertEq(fake_user2.balance, 148 ether);
+    }
+
+    function testFinalizeAuctionEarly() public {
+        address fake_user = address(1337);
+
+        // first bid
+        vm.prank(fake_user);
+        vm.deal(fake_user, 150 ether);
+        auctionWhatever.placeBid{value: 50 ether}(0);
+
+        vm.warp(1641070801);
+        vm.expectRevert();
+        vm.prank(articleOwner);
+        auctionWhatever.finalizeAuction(0);
+    }
+
+    function testFinalizeAuctionNotOwner() public {
+        address fake_user = address(1337);
+
+        // first bid
+        vm.prank(fake_user);
+        vm.deal(fake_user, 150 ether);
+        auctionWhatever.placeBid{value: 50 ether}(0);
+
+        vm.warp(9641070800);
+        vm.expectRevert();
+        vm.prank(fake_user);
+        auctionWhatever.finalizeAuction(0);
+    }
+
+    function testFinalizeAuctionSuccess() public {
+        address fake_user = address(1337);
+
+        // first bid
+        vm.prank(fake_user);
+        vm.deal(fake_user, 150 ether);
+        auctionWhatever.placeBid{value: 50 ether}(0);
+
+        vm.warp(9641070800);
+        vm.prank(articleOwner);
+        auctionWhatever.finalizeAuction(0);
+
+        (,,,,,,,, bool finalized) = auctionWhatever.articles(0);
+        assertEq(finalized, true);
     }
 }
